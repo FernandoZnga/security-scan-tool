@@ -1,58 +1,79 @@
-# Claude Code and Codex skills
+# Security Scan Skills
 
-This repository is a starter layout for authoring project skills for Claude Code
-and OpenAI Codex. Each tool discovers skills from its own project directory:
+[![Claude Code](https://img.shields.io/badge/Claude_Code-supported-6B4FBB?logo=anthropic&logoColor=white)](https://www.anthropic.com/claude-code)
+[![OpenAI Codex](https://img.shields.io/badge/OpenAI_Codex-supported-111111?logo=openai&logoColor=white)](https://openai.com/codex/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2E7D32.svg)](LICENSE)
 
-- Claude Code: `.claude/skills/`
-- Codex: `.agents/skills/`
+This repository packages a reusable, read-only security-audit skill for AI
+coding assistants. It guides an assistant through scanning an authorized
+codebase, validating likely findings in context, and returning a severity-ranked
+report. It is an instruction and pattern library, not a standalone scanner.
 
-## Structure
+The skill is packaged for both Claude Code and OpenAI Codex:
+
+- Claude Code: `.claude/skills/security-scan/`
+- Codex: `.agents/skills/security-scan/`
+
+## Coverage
+
+The audit detects the project's technology stack, then checks applicable areas:
+
+| Scope | Coverage |
+| --- | --- |
+| `secrets` | API keys, tokens, credentials, private keys, and committed secret files |
+| `injection` | SQL/NoSQL injection, XSS, command injection, SSRF, deserialization, path traversal, XXE, SSTI, and open redirects |
+| `auth` | JWT and password handling, sessions, access control, and insecure randomness |
+| `config` | CORS, security headers, debug endpoints, TLS, Docker, Kubernetes, and Terraform |
+| `deps` | Available native advisory scanners plus dependency-manifest heuristics |
+| `ai` | AI credentials, prompt injection, unsafe model output, and excessive agent permissions |
+| `mobile` | Android, iOS, and Flutter storage, transport, certificate, and crypto risks |
+| `data` | PII in logs, sensitive URLs, plaintext HTTP, weak crypto, and information leaks |
+
+The default `all` scope runs every applicable module. Mobile checks run only when
+the project contains Android, iOS, or Flutter indicators. Detection patterns,
+severity guidance, and reference mappings live in each skill's `patterns.md`.
+The current library maps to OWASP Top 10:2021, OWASP LLM Top 10, and OWASP
+Mobile Top 10 / MASVS.
+
+## Use
+
+Ask the assistant to run a security scan, optionally naming a scope and path.
+For example:
+
+```text
+Run a full security scan of this repository.
+Scan only for secrets in src/.
+Run the dependency scan for the project.
+```
+
+Supported scopes are `all`, `secrets`, `injection`, `auth`, `config`, `deps`,
+`ai`, `mobile`, and `data`. If no scope or path is specified, the skill scans
+the project root using the `all` scope.
+
+## Safety and Reporting
+
+- Scans are read-only: the skill reports issues and does not patch or refactor
+  project code.
+- Scan only code the user owns or is authorized to assess.
+- Secret values are redacted in findings; exposed credentials should be rotated
+  and removed from repository history.
+- Matches are triaged for context, framework protections, false positives, and
+  duplicates before they are reported.
+- The report groups findings by severity and includes priorities, positive
+  security practices, and general recommendations.
+
+## Repository Layout
 
 ```text
 .
-├── .agents/
-│   └── skills/
-│       └── security-scan/
-│           └── SKILL.md
-└── .claude/
-    └── skills/
-        └── security-scan/
-            └── SKILL.md
+├── .agents/skills/security-scan/
+│   ├── SKILL.md
+│   └── patterns.md
+└── .claude/skills/security-scan/
+    ├── SKILL.md
+    └── patterns.md
 ```
 
-Each skill lives in its own directory and starts with a `SKILL.md` containing
-YAML frontmatter (`name` and `description`) followed by the skill instructions.
-The starter `security-scan` skill is present in both locations so it can be
-discovered by either tool; keep the two copies in sync when updating it.
-
-## OWASP Top 10:2025
-
-The latest published edition is **OWASP Top 10:2025**, superseding the 2021
-edition. See the [official OWASP Top 10:2025 release](https://github.com/OWASP/Top10/tree/master/2025/docs/en).
-
-| OWASP position | Category | Description | Practical example |
-| --- | --- | --- | --- |
-| A01:2025 | Broken Access Control | Users can access or modify resources beyond their permissions. | Changing an account ID reveals another user's data. |
-| A02:2025 | Security Misconfiguration | Insecure settings or unnecessary features expose an application. | A production server exposes its debug console. |
-| A03:2025 | Software Supply Chain Failures | Compromised or vulnerable software dependencies and delivery processes put applications at risk. | A malicious dependency is added to a build. |
-| A04:2025 | Cryptographic Failures | Weak or missing cryptography exposes sensitive information. | Passwords are stored using an unsalted fast hash. |
-| A05:2025 | Injection | Untrusted input is interpreted as a command or query. | Crafted input makes a SQL query return every account. |
-| A06:2025 | Insecure Design | Missing or ineffective security controls in design create risks. | A checkout flow allows unlimited discount use. |
-| A07:2025 | Authentication Failures | Weak authentication or session handling lets attackers impersonate users. | Unrestricted login attempts enable credential stuffing. |
-| A08:2025 | Software or Data Integrity Failures | Software or data is trusted without verifying its integrity. | An application installs an unsigned update. |
-| A09:2025 | Security Logging and Alerting Failures | Missing or ineffective logging and alerts delay detection and response. | Repeated failed logins trigger no alert. |
-| A10:2025 | Mishandling of Exceptional Conditions | Unexpected errors or states are handled insecurely. | A failed payment leaves an order marked as paid. |
-
-As a skill grows, add supporting files beside `SKILL.md`, for example:
-
-```text
-security-scan/
-├── SKILL.md
-├── references/  # Longer guidance loaded when needed
-├── scripts/     # Helper scripts the skill can run
-└── assets/      # Templates and other supporting files
-```
-
-Use precise skill descriptions so the assistant can determine when to invoke
-them. Keep `SKILL.md` focused and move detailed reference material into
-`references/`.
+Each `SKILL.md` contains the workflow and frontmatter used to identify and invoke
+the skill. Its companion `patterns.md` contains the detection rules and
+reference material. Keep both platform copies in sync when making changes.
