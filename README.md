@@ -50,6 +50,43 @@ Supported scopes are `all`, `secrets`, `injection`, `auth`, `config`, `deps`,
 `ai`, `mobile`, and `data`. If no scope or path is specified, the skill scans
 the project root using the `all` scope.
 
+## Install in Your Project
+
+From the root of a clone of this repository, set `TARGET` to the path of the
+project you want to scan. Copy the complete skill directory so its `SKILL.md`
+and required `patterns.md` stay together.
+
+For Claude Code, run:
+
+```sh
+TARGET="/path/to/your/project"
+mkdir -p "$TARGET/.claude/skills"
+cp -R .claude/skills/security-scan "$TARGET/.claude/skills/"
+```
+
+Then open that project in Claude Code and invoke the skill, for example:
+
+```text
+/security-scan secrets src/
+```
+
+For OpenAI Codex, run this instead:
+
+```sh
+TARGET="/path/to/your/project"
+mkdir -p "$TARGET/.agents/skills"
+cp -R .agents/skills/security-scan "$TARGET/.agents/skills/"
+```
+
+Then open that project in Codex and invoke the skill, for example:
+
+```text
+$security-scan secrets src/
+```
+
+If Codex does not detect the newly copied skill, restart or refresh its
+session.
+
 ## Safety and Reporting
 
 - Scans are read-only: the skill reports issues and does not patch or refactor
